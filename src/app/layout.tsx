@@ -1,53 +1,53 @@
-// File: src/app/layout.tsx
-// Description: Wagmi, QueryClient, and Tailwind CSS providers for the entire application.
-// This is required to make all blockchain-related hooks available to your components.
-// ------------------------------------
 'use client';
 
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { coreDao, coreDaoTestnet } from 'wagmi/chains';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { injected, metaMask, walletConnect } from 'wagmi/connectors';
 import './globals.css';
-import Header from '../components/Header';
 import { Inter } from 'next/font/google';
+import { configureChains, createConfig, WagmiConfig } from 'wagmi';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { publicClient } from 'viem';
+import { coreDao } from 'wagmi/chains'; // if not available, create custom chain object
 
 const inter = Inter({ subsets: ['latin'] });
 
-// Define the Wagmi configuration
-const config = createConfig({
-  chains: [coreDao, coreDaoTestnet],
-  connectors: [
-    injected(),
-    metaMask(),
-    walletConnect({ projectId: 'YOUR_WALLETCONNECT_PROJECT_ID' }),
-  ],
-  ssr: true,
-  transports: {
-    [coreDao.id]: http(),
-    [coreDaoTestnet.id]: http(),
+// Configure chains (using Core Chain chain id from env)
+const CORE_CHAIN = {
+  id: Number(process.env.NEXT_PUBLIC_CORE_CHAIN_ID || 8453),
+  name: 'Core Chain',
+  network: 'core',
+  rpcUrls: {
+    default: { http: [process.env.NEXT_PUBLIC_CORE_RPC || 'https://rpc.corechain.example'] }
   },
+  nativeCurrency: { name: 'CORE', symbol: 'CORE', decimals: 18 }
+};
+
+const { chains, publicClient: wagmiPublicClient } = configureChains(
+  [CORE_CHAIN],
+  [jsonRpcProvider({ rpc: chain => ({ http: chain.rpcUrls.default.http[0] }) })]
+);
+
+const { connectors } = getDefaultWallets({
+  appName: 'Coreverse',
+  chains
 });
 
-// Create a QueryClient instance for data caching
-const queryClient = new QueryClient();
+const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors,
+  publicClient: wagmiPublicClient
+});
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={queryClient}>
-            <Header />
-            <main className="min-h-screen bg-gray-950 text-white p-6 md:p-12">
+        <WagmiConfig config={wagmiConfig}>
+          <RainbowKitProvider chains={chains}>
+            <div className="min-h-screen bg-slate-50 text-slate-800">
               {children}
-            </main>
-          </QueryClientProvider>
-        </WagmiProvider>
+            </div>
+          </RainbowKitProvider>
+        </WagmiConfig>
       </body>
     </html>
   );
