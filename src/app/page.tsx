@@ -1,25 +1,8 @@
-"use client";
-import { useAccount, useContractRead } from 'wagmi';
-import marketplaceAbi from '../contracts/Marketplace.json';
-
-export default function Home() {
-  const { address, isConnected } = useAccount();
-
-  const { data: listedItems } = useContractRead({
-    address: '0xYourMarketplaceAddress',
-    abi: marketplaceAbi,
-    functionName: 'getAllListings',
-  });
-
+export default function HomePage() {
   return (
-    <div>
-      <h1>Coreverse Marketplace</h1>
-      {isConnected ? (
-        <p>Connected as {address}</p>
-      ) : (
-        <p>Please connect wallet</p>
-      )}
-      <pre>{JSON.stringify(listedItems, null, 2)}</pre>
+    <div className="text-center py-10">
+      <h1 className="text-4xl font-bold mb-4">Welcome to Coreverse Marketplace</h1>
+      <p className="text-gray-500">Buy, sell, and explore NFTs across Pi & Core networks.</p>
     </div>
-  );
+  )
 }
