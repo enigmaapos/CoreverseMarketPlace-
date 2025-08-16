@@ -1,54 +1,29 @@
-// File: src/components/BuyNFTButton.tsx
-// Description: The button to execute an on-chain purchase of an NFT.
-// This component would receive `listing` and `signature` from the backend.
-// ------------------------------------
+// src/components/BuyNFTButton.tsx
 'use client';
-
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { marketplaceAbi, marketplaceAddress } from '../contracts/index';
+import { useBuy } from '../hooks/useBuy';
+import { useAccount } from 'wagmi';
 import { parseEther } from 'viem';
-import { useState } from 'react';
 
 export function BuyNFTButton({ listing, signature }) {
-  const { writeContract, data: hash, isPending: isTxPending } = useWriteContract();
-  const { isLoading: isTxConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
-  const [error, setError] = useState('');
+  const { address } = useAccount();
+  const { buy, state } = useBuy();
 
   const handleBuy = async () => {
-    setError('');
+    if (!signature) return alert('Listing signature missing');
     try {
-      writeContract({
-        address: marketplaceAddress,
-        abi: marketplaceAbi,
-        functionName: 'buy',
-        args: [listing, signature],
-        value: parseEther(listing.price),
-      });
+      // price is e.g. '0.1' CORE string — convert to wei
+      const priceWei = BigInt(parseEther(listing.price.toString()).toString());
+      await buy(listing, signature, priceWei);
+      alert('Purchase tx sent — check your wallet/explorer');
     } catch (err) {
-      console.error('Transaction failed:', err);
-      setError('Transaction failed. Check the console for details.');
+      console.error(err);
+      alert('Buy failed: ' + (err?.message || err));
     }
   };
 
-  let buttonText = 'Buy NFT';
-  if (isTxPending) {
-    buttonText = 'Confirming...';
-  } else if (isTxConfirming) {
-    buttonText = 'Processing...';
-  } else if (isTxSuccess) {
-    buttonText = 'Success!';
-  }
-
   return (
-    <>
-      <button
-        onClick={handleBuy}
-        disabled={isTxPending || isTxConfirming || isTxSuccess}
-        className="w-full px-6 py-3 text-lg font-bold text-white bg-gradient-to-r from-green-400 to-teal-500 rounded-lg hover:from-green-500 hover:to-teal-600 transition-all duration-200 shadow-lg disabled:opacity-50"
-      >
-        {buttonText}
-      </button>
-      {error && <p className="text-red-500 mt-2 text-center text-sm">{error}</p>}
-    </>
+    <button onClick={handleBuy} className="btn-primary w-full">
+      Buy for {listing.price} CORE
+    </button>
   );
 }
