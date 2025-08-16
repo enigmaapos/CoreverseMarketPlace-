@@ -1,37 +1,36 @@
-// src/app/layout.tsx
-import "./globals.css";
-import { WagmiConfig, createConfig, configureChains } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import './globals.css'
+import { ReactNode } from 'react'
+import { Inter } from 'next/font/google'
+import { WagmiConfig, createConfig, configureChains, mainnet } from 'wagmi'
+import { publicProvider } from 'wagmi/providers/public'
+import Header from '../components/Header'
+
+const inter = Inter({ subsets: ['latin'] })
 
 const { chains, publicClient } = configureChains(
-  [mainnet], // replace with Core Chain
+  [mainnet], // add Pi / Core chain when RPCs are available
   [publicProvider()]
-);
+)
 
-const { connectors } = getDefaultWallets({
-  appName: 'Coreverse Marketplace',
-  projectId: 'YOUR_WALLETCONNECT_ID',
-  chains
-});
-
-const wagmiConfig = createConfig({
+const config = createConfig({
   autoConnect: true,
-  connectors,
-  publicClient
-});
+  publicClient,
+})
 
-export default function RootLayout({ children }) {
+export const metadata = {
+  title: 'Coreverse Marketplace',
+  description: 'Universal NFT Marketplace for Pi & Core Network',
+}
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <WagmiConfig config={wagmiConfig}>
-          <RainbowKitProvider chains={chains}>
-            {children}
-          </RainbowKitProvider>
+      <body className={inter.className}>
+        <WagmiConfig config={config}>
+          <Header />
+          <main className="container mx-auto px-4">{children}</main>
         </WagmiConfig>
       </body>
     </html>
-  );
+  )
 }
